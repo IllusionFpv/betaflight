@@ -328,6 +328,10 @@ static const char * const lookupTableRatesType[] = {
     "BETAFLIGHT", "RACEFLIGHT", "KISS"
 };
 
+static const char * const lookupTableRcExpoType[] = {
+    "STANDARD", "SMOOTH"
+};
+
 #ifdef USE_OVERCLOCK
 static const char * const lookupOverclock[] = {
     "OFF",
@@ -528,6 +532,7 @@ const lookupTableEntry_t lookupTables[] = {
     LOOKUP_TABLE_ENTRY(lookupTableGyroOverflowCheck),
 #endif
     LOOKUP_TABLE_ENTRY(lookupTableRatesType),
+    LOOKUP_TABLE_ENTRY(lookupTableRcExpoType),
 #ifdef USE_OVERCLOCK
     LOOKUP_TABLE_ENTRY(lookupOverclock),
 #endif
@@ -857,6 +862,7 @@ const clivalue_t valueTable[] = {
     { "yaw_srate",                  VAR_UINT8  | PROFILE_RATE_VALUE, .config.minmaxUnsigned = { 0, CONTROL_RATE_CONFIG_RATE_MAX }, PG_CONTROL_RATE_PROFILES, offsetof(controlRateConfig_t, rates[FD_YAW]) },
     { "tpa_rate",                   VAR_UINT8  | PROFILE_RATE_VALUE, .config.minmaxUnsigned = { 0, CONTROL_RATE_CONFIG_TPA_MAX}, PG_CONTROL_RATE_PROFILES, offsetof(controlRateConfig_t, dynThrPID) },
     { "tpa_breakpoint",             VAR_UINT16 | PROFILE_RATE_VALUE, .config.minmaxUnsigned = { PWM_PULSE_MIN, PWM_PULSE_MAX }, PG_CONTROL_RATE_PROFILES, offsetof(controlRateConfig_t, tpa_breakpoint) },
+    { "rc_expo_type",               VAR_UINT8  | PROFILE_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_RC_EXPO_TYPE }, PG_CONTROL_RATE_PROFILES, offsetof(controlRateConfig_t, rcExpoType) },
 #ifdef USE_TPA_MODE
     { "tpa_mode",                   VAR_UINT8  | PROFILE_RATE_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_TPA_MODE }, PG_CONTROL_RATE_PROFILES, offsetof(controlRateConfig_t, tpaMode) },
 #endif

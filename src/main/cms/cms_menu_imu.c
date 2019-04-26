@@ -75,6 +75,10 @@ static const char * const osdTableThrottleLimitType[] = {
     "OFF", "SCALE", "CLIP"
 };
 
+static const char * const osdTableRxExpoType[] = {
+    "STANDARD", "SMOOTH"
+};
+
 #if defined(USE_GYRO_DATA_ANALYSE) && defined(USE_EXTENDED_CMS_MENUS)
 static const char * const osdTableDynNotchRangeType[] = {
     "HIGH", "MED", "LOW", "AUTO"
@@ -266,6 +270,7 @@ static const OSD_Entry cmsx_menuRateProfileEntries[] =
     { "THR EXPO",    OME_UINT8,  NULL, &(OSD_UINT8_t) { &rateProfile.thrExpo8,          0,  100,  1}, 0 },
     { "THRPID ATT",  OME_FLOAT,  NULL, &(OSD_FLOAT_t) { &rateProfile.dynThrPID,         0,  100,  1, 10}, 0 },
     { "TPA BRKPT",   OME_UINT16, NULL, &(OSD_UINT16_t){ &rateProfile.tpa_breakpoint, 1000, 2000, 10}, 0 },
+    { "RC EXPO TYPE", OME_TAB,   NULL, &(OSD_TAB_t)   { &rateProfile.rcExpoType,        1, osdTableRxExpoType}, 0 },
 
     { "THR LIM TYPE",OME_TAB,    NULL, &(OSD_TAB_t)   { &rateProfile.throttle_limit_type, THROTTLE_LIMIT_TYPE_COUNT - 1, osdTableThrottleLimitType}, 0 },
     { "THR LIM %",   OME_UINT8,  NULL, &(OSD_UINT8_t) { &rateProfile.throttle_limit_percent, 25,  100,  1}, 0 },

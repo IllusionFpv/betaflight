@@ -121,7 +121,11 @@ float applyBetaflightRates(const int axis, float rcCommandf, const float rcComma
 {
     if (currentControlRateProfile->rcExpo[axis]) {
         const float expof = currentControlRateProfile->rcExpo[axis] / 100.0f;
-        rcCommandf = rcCommandf * power3(rcCommandfAbs) * expof + rcCommandf * (1 - expof);
+        if (currentControlRateProfile->rcExpoType == STANDARD) {
+            rcCommandf = rcCommandf * power3(rcCommandfAbs) * expof + rcCommandf * (1 - expof);
+        } else {
+            rcCommandf = rcCommandf * power2(rcCommandfAbs) * expof + rcCommandf * (1 - expof);
+        }       
     }
 
     float rcRate = currentControlRateProfile->rcRates[axis] / 100.0f;

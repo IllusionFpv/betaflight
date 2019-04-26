@@ -42,6 +42,11 @@ typedef enum {
     TPA_MODE_D
 } tpaMode_e;
 
+typedef enum {
+    STANDARD,
+    SMOOTH
+} rcExpoType_e;
+
 #define MAX_RATE_PROFILE_NAME_LENGTH 8u
 
 typedef struct controlRateConfig_s {
@@ -57,7 +62,9 @@ typedef struct controlRateConfig_s {
     uint8_t throttle_limit_percent;         // Sets the maximum pilot commanded throttle limit
     uint16_t rate_limit[3];                 // Sets the maximum rate for the axes
     uint8_t tpaMode;                        // Controls which PID terms TPA effects
+    uint8_t rcExpoType;
     char profileName[MAX_RATE_PROFILE_NAME_LENGTH + 1]; // Descriptive name for rate profile
+
 } controlRateConfig_t;
 
 PG_DECLARE_ARRAY(controlRateConfig_t, CONTROL_RATE_PROFILE_COUNT, controlRateProfiles);

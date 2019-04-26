@@ -25,6 +25,7 @@
 #ifndef sq
 #define sq(x) ((x)*(x))
 #endif
+#define power2(x) ((x)*(x))
 #define power3(x) ((x)*(x)*(x))
 
 // Undefine this for use libc sinf/cosf. Keep this defined to use fast sin/cos approximations

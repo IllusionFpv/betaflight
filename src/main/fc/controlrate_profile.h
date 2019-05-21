@@ -44,7 +44,7 @@ typedef enum {
 
 typedef enum {
     STANDARD,
-    SMOOTH
+    POWER2
 } rcExpoType_e;
 
 #define MAX_RATE_PROFILE_NAME_LENGTH 8u

@@ -76,7 +76,7 @@ static const char * const osdTableThrottleLimitType[] = {
 };
 
 static const char * const osdTableRxExpoType[] = {
-    "STANDARD", "SMOOTH"
+    "STANDARD", "POWER2"
 };
 
 #if defined(USE_GYRO_DATA_ANALYSE) && defined(USE_EXTENDED_CMS_MENUS)

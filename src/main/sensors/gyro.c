@@ -228,6 +228,7 @@ void pgResetFn_gyroConfig(gyroConfig_t *gyroConfig)
     gyroConfig->dyn_notch_q = 120;
     gyroConfig->dyn_notch_min_hz = 150;
     gyroConfig->gyro_filter_debug_axis = FD_ROLL;
+    gyroConfig->dyn_lpf_gyro_rpm_mode = OFF;
 }
 
 #ifdef USE_MULTI_GYRO
@@ -1273,8 +1274,18 @@ float dynThrottle(float throttle) {
 
 void dynLpfGyroUpdate(float throttle)
 {
+    static unsigned int cutoffFreq;
+    static float previousThrottle;
+
     if (dynLpfFilter != DYN_LPF_NONE) {
-        const unsigned int cutoffFreq = fmax(dynThrottle(throttle) * dynLpfMax, dynLpfMin);
+        if (gyroConfig()->dyn_lpf_gyro_rpm_mode == ON) {
+            if (previousThrottle != throttle) {
+                cutoffFreq = fmax(getMotorFrequency(), dynLpfMin);
+                previousThrottle = throttle;
+            }
+        } else {
+            cutoffFreq = fmax(dynThrottle(throttle) * dynLpfMax, dynLpfMin);
+        }
 
         if (dynLpfFilter == DYN_LPF_PT1) {
             DEBUG_SET(DEBUG_DYN_LPF, 2, cutoffFreq);

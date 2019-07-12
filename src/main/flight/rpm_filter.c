@@ -222,4 +222,15 @@ bool isRpmFilterEnabled(void)
     return (motorConfig()->dev.useDshotTelemetry && (rpmFilterConfig()->gyro_rpm_notch_harmonics || rpmFilterConfig()->dterm_rpm_notch_harmonics));
 }
 
+float getMotorFrequency(void) {
+    static float newMotorFrequency;
+    newMotorFrequency = motorFrequency[0];
+    for (unsigned int i = 1; i < getMotorCount(); i++) {
+        if (motorFrequency[i] < newMotorFrequency) {
+            newMotorFrequency = motorFrequency[i];
+        }
+    }
+    return newMotorFrequency - newMotorFrequency / rpmFilterConfig()->gyro_rpm_notch_q / 200.0f;
+}
+
 #endif

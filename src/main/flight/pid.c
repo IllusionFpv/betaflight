@@ -1522,7 +1522,7 @@ void dynLpfDTermUpdate(float throttle)
         
         if (dynLpfRpmMode == ON) {
             if (previousThrottle != throttle) {
-                cutoffFreq = constrainf(getMotorFrequency(), dynLpfMin, dynLpfMax);
+                cutoffFreq = constrainf(getCutoffFrequency(dynLpfFilter), dynLpfMin, dynLpfMax);
                 previousThrottle = throttle;
             }                
         } else {

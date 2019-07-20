@@ -1518,13 +1518,9 @@ void dynLpfDTermUpdate(float throttle)
 {
     if (dynLpfFilter != DYN_LPF_NONE) {
         static unsigned int cutoffFreq;
-        static float previousThrottle;
         
         if (dynLpfRpmMode == ON) {
-            if (previousThrottle != throttle) {
-                cutoffFreq = constrainf(getCutoffFrequency(dynLpfFilter), dynLpfMin, dynLpfMax);
-                previousThrottle = throttle;
-            }                
+            cutoffFreq = constrainf(getCutoffFrequency(dynLpfFilter), dynLpfMin, dynLpfMax);
         } else {
             cutoffFreq = fmax(dynThrottle(throttle) * dynLpfMax, dynLpfMin);
         }

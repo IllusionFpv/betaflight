@@ -1275,14 +1275,10 @@ float dynThrottle(float throttle) {
 void dynLpfGyroUpdate(float throttle)
 {
     static unsigned int cutoffFreq;
-    static float previousThrottle;
 
     if (dynLpfFilter != DYN_LPF_NONE) {
         if (gyroConfig()->dyn_lpf_gyro_rpm_mode == ON) {
-            if (previousThrottle != throttle) {
-                cutoffFreq = fmax(getCutoffFrequency(dynLpfFilter), dynLpfMin);
-                previousThrottle = throttle;
-            }
+            cutoffFreq = fmax(getCutoffFrequency(dynLpfFilter), dynLpfMin);
         } else {
             cutoffFreq = fmax(dynThrottle(throttle) * dynLpfMax, dynLpfMin);
         }

@@ -49,6 +49,7 @@
 #define ERPM_PER_LSB            100.0f
 #define MIN_UPDATE_T            0.001f
 
+#define RPM_LPF_UPDATE_DELAY_US 5000
 
 static pt1Filter_t rpmFilters[MAX_SUPPORTED_MOTORS];
 
@@ -63,9 +64,20 @@ typedef struct rpmNotchFilter_s
     biquadFilter_t notch[XYZ_AXIS_COUNT][MAX_SUPPORTED_MOTORS][RPM_FILTER_MAXHARMONICS];
 } rpmNotchFilter_t;
 
+typedef union rpmGyroLowpass_u {
+    pt1Filter_t pt1Filter;
+    biquadFilter_t biquadFilter;
+} rpmGyroLowpass_t;
+
+typedef union rpmDtermLowpass_u {
+    pt1Filter_t pt1Filter;
+    biquadFilter_t biquadFilter;
+} rpmDtermLowpass_t;
+
 FAST_RAM_ZERO_INIT static float   erpmToHz;
 FAST_RAM_ZERO_INIT static float   filteredMotorErpm[MAX_SUPPORTED_MOTORS];
 FAST_RAM_ZERO_INIT static float   minMotorFrequency;
+FAST_RAM_ZERO_INIT static float   avgMotorFrequency;
 FAST_RAM_ZERO_INIT static uint8_t numberFilters;
 FAST_RAM_ZERO_INIT static uint8_t numberRpmNotchFilters;
 FAST_RAM_ZERO_INIT static uint8_t filterUpdatesPerIteration;
@@ -80,6 +92,20 @@ FAST_RAM_ZERO_INIT static uint8_t currentFilterNumber;
 FAST_RAM static rpmNotchFilter_t* currentFilter = &filters[0];
 
 
+FAST_RAM_ZERO_INIT static rpmGyroLowpass_t rpmGyroLpfFilter[XYZ_AXIS_COUNT];
+FAST_RAM_ZERO_INIT static rpmDtermLowpass_t rpmDtermLpfFilter[XYZ_AXIS_COUNT];
+FAST_RAM_ZERO_INIT static filterApplyFnPtr rpmGyroLpfApplyFn;
+FAST_RAM_ZERO_INIT static filterApplyFnPtr rpmDtermLpfApplyFn;
+
+FAST_RAM_ZERO_INIT static float dT;
+FAST_RAM_ZERO_INIT static uint16_t rpmGyroLpfMinHz;
+FAST_RAM_ZERO_INIT static uint16_t rpmGyroLpfMaxHz;
+FAST_RAM_ZERO_INIT static uint8_t  rpmGyroLowpassType;
+FAST_RAM_ZERO_INIT static uint16_t rpmDtermLpfMinHz;
+FAST_RAM_ZERO_INIT static uint16_t rpmDtermLpfMaxHz;
+FAST_RAM_ZERO_INIT static uint8_t  rpmDtermLowpassType;
+FAST_RAM_ZERO_INIT static float gyroCutoffFreq;
+FAST_RAM_ZERO_INIT static float dtermCutoffFreq;
 
 PG_REGISTER_WITH_RESET_FN(rpmFilterConfig_t, rpmFilterConfig, PG_RPM_FILTER_CONFIG, 3);
 
@@ -94,6 +120,13 @@ void pgResetFn_rpmFilterConfig(rpmFilterConfig_t *config)
     config->dterm_rpm_notch_q = 500;
 
     config->rpm_lpf = 150;
+
+    config->rpm_gyro_lpf_min_hz = 0;
+    config->rpm_gyro_lpf_max_hz = 0;
+    config->rpm_gyro_lowpass_type = FILTER_PT1;
+    config->rpm_dterm_lpf_min_hz = 0;
+    config->rpm_dterm_lpf_max_hz = 0;
+    config->rpm_dterm_lowpass_type = FILTER_BIQUAD;
 }
 
 static void rpmNotchFilterInit(rpmNotchFilter_t* filter, int harmonics, int minHz, int q, float looptime)
@@ -156,6 +189,54 @@ void rpmFilterInit(const rpmFilterConfig_t *config)
     filterUpdatesPerIteration = rintf(filtersPerLoopIteration + 0.49f);
 }
 
+void rpmLowpassInit(const rpmFilterConfig_t *config)
+{
+    rpmGyroLpfApplyFn = nullFilterApply;
+    rpmDtermLpfApplyFn = nullFilterApply;
+
+    dT = gyro.targetLooptime * 1e-6f;
+    rpmGyroLpfMinHz = config->rpm_gyro_lpf_min_hz;
+    rpmGyroLpfMaxHz = config->rpm_gyro_lpf_max_hz;
+    rpmGyroLowpassType = config->rpm_gyro_lowpass_type;
+
+    rpmDtermLpfMinHz = config->rpm_dterm_lpf_min_hz;
+    rpmDtermLpfMaxHz = config->rpm_dterm_lpf_max_hz;
+    rpmDtermLowpassType = config->rpm_dterm_lowpass_type;
+
+    if (rpmGyroLpfMinHz > 0) {
+        switch (rpmGyroLowpassType) {
+            case FILTER_PT1:
+                rpmGyroLpfApplyFn = (filterApplyFnPtr) pt1FilterApply;
+                for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+                    pt1FilterInit(&rpmGyroLpfFilter[axis].pt1Filter, pt1FilterGain(rpmGyroLpfMinHz, dT));
+                }
+                break;
+            case FILTER_BIQUAD:
+                rpmGyroLpfApplyFn = (filterApplyFnPtr) biquadFilterApplyDF1;
+                for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+                    biquadFilterInitLPF(&rpmGyroLpfFilter[axis].biquadFilter, rpmGyroLpfMinHz, gyro.targetLooptime);
+                }
+                break;
+        }
+    }
+
+    if (rpmDtermLpfMinHz > 0) {
+        switch (rpmDtermLowpassType) {
+            case FILTER_PT1:
+                rpmDtermLpfApplyFn = (filterApplyFnPtr) pt1FilterApply;
+                for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+                    pt1FilterInit(&rpmDtermLpfFilter[axis].pt1Filter, pt1FilterGain(rpmDtermLpfMinHz, dT));
+                }
+                break;
+            case FILTER_BIQUAD:
+                rpmDtermLpfApplyFn = (filterApplyFnPtr) biquadFilterApplyDF1;
+                for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+                    biquadFilterInitLPF(&rpmDtermLpfFilter[axis].biquadFilter, rpmDtermLpfMinHz, gyro.targetLooptime);
+                }
+        }
+    }
+}
+
 static float applyFilter(rpmNotchFilter_t* filter, int axis, float value)
 {
     if (filter == NULL) {
@@ -177,6 +258,14 @@ float rpmFilterGyro(int axis, float value)
 float rpmFilterDterm(int axis, float value)
 {
     return applyFilter(dtermFilter, axis, value);
+}
+
+float applyRpmLowpassGyro(int axis, float value) {
+    return rpmGyroLpfApplyFn((filter_t *)&rpmGyroLpfFilter[axis], value);
+}
+
+float applyRpmLowpassDterm(int axis, float value) {
+    return rpmDtermLpfApplyFn((filter_t *)&rpmDtermLpfFilter[axis], value);
 }
 
 FAST_RAM_ZERO_INIT static float motorFrequency[MAX_SUPPORTED_MOTORS];
@@ -230,6 +319,43 @@ FAST_CODE_NOINLINE void rpmFilterUpdate()
     }
 }
 
+void rpmLpfUpdate(timeUs_t currentTimeUs) {
+
+    static timeUs_t lastRpmLpfUpdateUs = 0;
+
+    if (cmpTimeUs(currentTimeUs, lastRpmLpfUpdateUs) >= RPM_LPF_UPDATE_DELAY_US) {
+
+        rpmAvgMotorFrequency();
+
+        gyroCutoffFreq = constrainf(getCutoffFrequency(rpmGyroLowpassType), rpmGyroLpfMinHz, rpmGyroLpfMaxHz);
+        dtermCutoffFreq = constrainf(getCutoffFrequency(rpmDtermLowpassType), rpmDtermLpfMinHz, rpmDtermLpfMaxHz);
+
+        if (rpmGyroLowpassType == FILTER_PT1) {
+            for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+                pt1FilterUpdateCutoff(&rpmGyroLpfFilter[axis].pt1Filter, pt1FilterGain(gyroCutoffFreq, dT));
+            }
+        } else if (rpmGyroLowpassType == FILTER_BIQUAD) {
+            for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+                biquadFilterUpdateLPF(&rpmGyroLpfFilter[axis].biquadFilter, gyroCutoffFreq, gyro.targetLooptime);
+            }
+        }
+
+        if (rpmDtermLowpassType == FILTER_PT1) {
+            for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+                pt1FilterUpdateCutoff(&rpmDtermLpfFilter[axis].pt1Filter, pt1FilterGain(dtermCutoffFreq, dT));
+            }
+        } else if (rpmDtermLowpassType == FILTER_BIQUAD) {
+            for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+                biquadFilterUpdateLPF(&rpmDtermLpfFilter[axis].biquadFilter, dtermCutoffFreq, gyro.targetLooptime);
+            }
+        }
+        lastRpmLpfUpdateUs = currentTimeUs;
+        DEBUG_SET(DEBUG_RPM_LPF, 0, avgMotorFrequency);
+        DEBUG_SET(DEBUG_RPM_LPF, 1, gyroCutoffFreq);
+        DEBUG_SET(DEBUG_RPM_LPF, 2, dtermCutoffFreq);
+    }
+}
+
 bool isRpmFilterEnabled(void)
 {
     return (motorConfig()->dev.useDshotTelemetry && (rpmFilterConfig()->gyro_rpm_notch_harmonics || rpmFilterConfig()->dterm_rpm_notch_harmonics));
@@ -248,5 +374,23 @@ float rpmMinMotorFrequency()
     return minMotorFrequency;
 }
 
+void rpmAvgMotorFrequency() {
+    avgMotorFrequency = 0;
+    for (int i = 0; i < getMotorCount(); i++) {
+        avgMotorFrequency += motorFrequency[i];
+    }
+    avgMotorFrequency = avgMotorFrequency / getMotorCount();
+}
+
+float getCutoffFrequency(uint8_t filterType) {
+    float percent = 0;
+
+    if (filterType == FILTER_PT1) {
+        percent = 0.25f;
+    } else if (filterType == FILTER_BIQUAD) {
+        percent = 0.15f;
+    }
+    return minMotorFrequency - minMotorFrequency * percent;
+}
 
 #endif

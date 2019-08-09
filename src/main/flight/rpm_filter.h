@@ -34,6 +34,13 @@ typedef struct rpmFilterConfig_s
     uint16_t dterm_rpm_notch_q;          // q of the notches
 
     uint16_t rpm_lpf;                    // the cutoff of the lpf on reported motor rpm
+
+    uint16_t rpm_gyro_lpf_min_hz;
+    uint16_t rpm_gyro_lpf_max_hz;
+    uint8_t  rpm_gyro_lowpass_type;
+    uint16_t rpm_dterm_lpf_min_hz;
+    uint16_t rpm_dterm_lpf_max_hz;
+    uint8_t  rpm_dterm_lowpass_type;
 } rpmFilterConfig_t;
 
 PG_DECLARE(rpmFilterConfig_t, rpmFilterConfig);
@@ -44,3 +51,9 @@ float rpmFilterDterm(int axis, float values);
 void  rpmFilterUpdate();
 bool isRpmFilterEnabled(void);
 float rpmMinMotorFrequency();
+void rpmLowpassInit(const rpmFilterConfig_t *config);
+float applyRpmLowpassGyro(int axis, float value);
+float applyRpmLowpassDterm(int axis, float value);
+void rpmLpfUpdate(timeUs_t currentTimeUs);
+float getCutoffFrequency(uint8_t filterType);
+void rpmAvgMotorFrequency();

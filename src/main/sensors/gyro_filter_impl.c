@@ -50,6 +50,8 @@ static FAST_CODE void GYRO_FILTER_FUNCTION_NAME(void)
         gyroADCf = gyro.lowpassFilterApplyFn((filter_t *)&gyro.lowpassFilter[axis], gyroADCf);
         gyroADCf = gyro.lowpass2FilterApplyFn((filter_t *)&gyro.lowpass2Filter[axis], gyroADCf);
 
+        gyroADCf = applyRpmLowpassGyro(axis, gyroADCf);
+
 #ifdef USE_GYRO_DATA_ANALYSE
         if (isDynamicFilterActive()) {
             if (axis == gyroDebugAxis) {

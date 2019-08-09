@@ -758,6 +758,7 @@ void pidInit(const pidProfile_t *pidProfile)
 #ifdef USE_RPM_FILTER
     rpmFilterInit(rpmFilterConfig());
 #endif
+    rpmLowpassInit(rpmFilterConfig());
 }
 
 #ifdef USE_ACRO_TRAINER
@@ -1322,10 +1323,13 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
         gyroRateDterm[axis] = dtermNotchApplyFn((filter_t *) &dtermNotch[axis], gyroRateDterm[axis]);
         gyroRateDterm[axis] = dtermLowpassApplyFn((filter_t *) &dtermLowpass[axis], gyroRateDterm[axis]);
         gyroRateDterm[axis] = dtermLowpass2ApplyFn((filter_t *) &dtermLowpass2[axis], gyroRateDterm[axis]);
+
+        gyroRateDterm[axis] = applyRpmLowpassDterm(axis, gyroRateDterm[axis]);
     }
 
     rotateItermAndAxisError();
 #ifdef USE_RPM_FILTER
+    rpmLpfUpdate(currentTimeUs);
     rpmFilterUpdate();
 #endif
 

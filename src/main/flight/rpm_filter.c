@@ -390,7 +390,7 @@ float getCutoffFrequency(uint8_t filterType) {
     } else if (filterType == FILTER_BIQUAD) {
         percent = 0.15f;
     }
-    return minMotorFrequency - minMotorFrequency * percent;
+    return avgMotorFrequency - avgMotorFrequency * percent;
 }
 
 #endif

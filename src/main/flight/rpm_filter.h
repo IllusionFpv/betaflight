@@ -21,6 +21,7 @@
 #pragma once
 
 #include "common/axis.h"
+#include "common/time.h"
 #include "pg/pg.h"
 
 typedef struct rpmFilterConfig_s

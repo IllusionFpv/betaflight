@@ -219,7 +219,7 @@
 
 #if (TARGET_FLASH_SIZE > 64)
 #define USE_ACRO_TRAINER
-#define USE_BLACKBOX
+//#define USE_BLACKBOX
 #define USE_CLI_BATCH
 #define USE_RESOURCE_MGMT
 #define USE_RUNAWAY_TAKEOFF     // Runaway Takeoff Prevention (anti-taz)
@@ -290,6 +290,8 @@
 #define USE_HUFFMAN
 #define USE_PINIO
 #define USE_PINIOBOX
+#define USE_VTX_TABLE
+#define USE_INTERPOLATED_SP
 #endif
 
 #if ((TARGET_FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 3))
@@ -361,11 +363,11 @@
 #define USE_CMS_FAILSAFE_MENU
 #define USE_CMS_GPS_RESCUE_MENU
 #define USE_TELEMETRY_SENSORS_DISABLED_DETAILS
-#define USE_VTX_TABLE
+//#define USE_VTX_TABLE
 #define USE_PERSISTENT_STATS
 #define USE_PROFILE_NAMES
 #define USE_SERIALRX_SRXL2     // Spektrum SRXL2 protocol
-#define USE_INTERPOLATED_SP
+//#define USE_INTERPOLATED_SP
 #define USE_CUSTOM_BOX_NAMES
 #define USE_BATTERY_VOLTAGE_SAG_COMPENSATION
 #endif

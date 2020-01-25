@@ -192,6 +192,15 @@ float applyKissRates(const int axis, float rcCommandf, const float rcCommandfAbs
     return kissAngle;
 }
 
+float applyInavRates(const int axis, float rcCommandf, const float rcCommandfAbs)
+{
+    if (currentControlRateProfile->rcExpo[axis]) {
+        const float expof = currentControlRateProfile->rcExpo[axis] / 100.0f;
+        rcCommandf = rcCommandf * powerf(rcCommandfAbs, 2) * expof + rcCommandf * (1 - expof);
+    }
+    return constrainf(rcCommandf * currentControlRateProfile->rcRates[axis] * 10, -SETPOINT_RATE_LIMIT, SETPOINT_RATE_LIMIT);
+}
+
 float applyCurve(int axis, float deflection)
 {
     return applyRates(axis, deflection, fabsf(deflection));
@@ -814,6 +823,11 @@ void initRcProcessing(void)
         break;
     case RATES_TYPE_KISS:
         applyRates = applyKissRates;
+
+        break;
+
+    case RATES_TYPE_INAV:
+        applyRates = applyInavRates;
 
         break;
     }

@@ -192,6 +192,21 @@ float applyKissRates(const int axis, float rcCommandf, const float rcCommandfAbs
     return kissAngle;
 }
 
+#define RC_STICK_PERCENT 0.3f    // stick deflection for calculate expo
+#define MAX_EXPO_VALUE   0.3f    // maximum expo value at 30% of stick deflection
+
+float applyNewRates(const int axis, float rcCommandf, const float rcCommandfAbs)
+{
+    const float expoPower = 2 + currentControlRateProfile->rcExpo[axis] / 100.0f * 2;
+    const float minExpoValue = RC_STICK_PERCENT * powf(RC_STICK_PERCENT, expoPower);
+
+    const float midDPS = constrainf((float)currentControlRateProfile->rcRates[axis] / (currentControlRateProfile->rates[axis] * 10), minExpoValue, MAX_EXPO_VALUE);
+    const float expof = (midDPS - RC_STICK_PERCENT) / (minExpoValue - RC_STICK_PERCENT);
+
+    rcCommandf = rcCommandf * powf(rcCommandfAbs, expoPower) * expof + rcCommandf * (1 - expof);
+    return constrainf(rcCommandf * currentControlRateProfile->rates[axis] * 10, -SETPOINT_RATE_LIMIT, SETPOINT_RATE_LIMIT);
+}
+
 float applyCurve(int axis, float deflection)
 {
     return applyRates(axis, deflection, fabsf(deflection));
@@ -814,6 +829,11 @@ void initRcProcessing(void)
         break;
     case RATES_TYPE_KISS:
         applyRates = applyKissRates;
+
+        break;
+
+    case RATES_TYPE_NEW:
+        applyRates = applyNewRates;
 
         break;
     }

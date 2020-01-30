@@ -1335,7 +1335,13 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
 
     // gradually scale back integration when above windup point
     float dynCi = dT;
-    if (itermWindupPointInv > 1.0f) {
+    bool centeredSticks = false;
+    for (int axis = FD_ROLL; axis <= FD_YAW; axis++) {
+        if (getRcDeflectionAbs(axis) < 0.05f) {
+            centeredSticks = true;
+        }
+    }
+    if (itermWindupPointInv > 1.0f && mixerGetThrottle() < 0.05f && centeredSticks) {
         dynCi *= constrainf((1.0f - getMotorMixRange()) * itermWindupPointInv, 0.0f, 1.0f);
     }
 

@@ -135,7 +135,7 @@ static FAST_RAM_ZERO_INIT float airmodeThrottleOffsetLimit;
 
 #define LAUNCH_CONTROL_YAW_ITERM_LIMIT 50 // yaw iterm windup limit when launch mode is "FULL" (all axes)
 
-#define ITERM_WINDUP_DEADBAND 0.05f //deadband to allow windup
+#define ITERM_WINDUP_DEADBAND 0.06f //deadband to allow windup
 
 PG_REGISTER_ARRAY_WITH_RESET_FN(pidProfile_t, PID_PROFILE_COUNT, pidProfiles, PG_PID_PROFILE, 14);
 
@@ -1337,16 +1337,20 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
 
     // gradually scale back integration when above windup point
     float dynCi = dT;
-    bool centeredSticks = false;
+    DEBUG_SET(DEBUG_DYNCI, 0, lrintf(dynCi * 100000));
+    bool centeredSticks = true;
     for (int axis = FD_ROLL; axis <= FD_YAW; axis++) {
-        if (getRcDeflectionAbs(axis) < ITERM_WINDUP_DEADBAND) {
-            centeredSticks = true;
+        if (getRcDeflectionAbs(axis) > ITERM_WINDUP_DEADBAND) {
+            centeredSticks = false;
             break;
         }
     }
     if (itermWindupPointInv > 1.0f && mixerGetThrottle() < ITERM_WINDUP_DEADBAND && centeredSticks) {
         dynCi *= constrainf((1.0f - getMotorMixRange()) * itermWindupPointInv, 0.0f, 1.0f);
     }
+    DEBUG_SET(DEBUG_DYNCI, 1, lrintf(dynCi * 100000));
+    DEBUG_SET(DEBUG_DYNCI, 2, getMotorMixRange() * 1000);
+    DEBUG_SET(DEBUG_DYNCI, 3, (centeredSticks && (mixerGetThrottle() < ITERM_WINDUP_DEADBAND)));
 
     // Precalculate gyro deta for D-term here, this allows loop unrolling
     float gyroRateDterm[XYZ_AXIS_COUNT];

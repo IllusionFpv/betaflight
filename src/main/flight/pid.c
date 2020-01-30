@@ -1337,7 +1337,6 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
 
     // gradually scale back integration when above windup point
     float dynCi = dT;
-    DEBUG_SET(DEBUG_DYNCI, 0, lrintf(dynCi * 100000));
     bool centeredSticks = true;
     for (int axis = FD_ROLL; axis <= FD_YAW; axis++) {
         if (getRcDeflectionAbs(axis) > ITERM_WINDUP_DEADBAND) {
@@ -1348,9 +1347,6 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
     if (itermWindupPointInv > 1.0f && mixerGetThrottle() < ITERM_WINDUP_DEADBAND && centeredSticks) {
         dynCi *= constrainf((1.0f - getMotorMixRange()) * itermWindupPointInv, 0.0f, 1.0f);
     }
-    DEBUG_SET(DEBUG_DYNCI, 1, lrintf(dynCi * 100000));
-    DEBUG_SET(DEBUG_DYNCI, 2, getMotorMixRange() * 1000);
-    DEBUG_SET(DEBUG_DYNCI, 3, (centeredSticks && (mixerGetThrottle() < ITERM_WINDUP_DEADBAND)));
 
     // Precalculate gyro deta for D-term here, this allows loop unrolling
     float gyroRateDterm[XYZ_AXIS_COUNT];

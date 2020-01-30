@@ -135,6 +135,8 @@ static FAST_RAM_ZERO_INIT float airmodeThrottleOffsetLimit;
 
 #define LAUNCH_CONTROL_YAW_ITERM_LIMIT 50 // yaw iterm windup limit when launch mode is "FULL" (all axes)
 
+#define ITERM_WINDUP_DEADBAND 0.05f //deadband to allow windup
+
 PG_REGISTER_ARRAY_WITH_RESET_FN(pidProfile_t, PID_PROFILE_COUNT, pidProfiles, PG_PID_PROFILE, 14);
 
 void resetPidProfile(pidProfile_t *pidProfile)
@@ -152,7 +154,7 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .yaw_lowpass_hz = 0,
         .dterm_notch_hz = 0,
         .dterm_notch_cutoff = 0,
-        .itermWindupPointPercent = 100,
+        .itermWindupPointPercent = 40,
         .vbatPidCompensation = 0,
         .pidAtMinThrottle = PID_STABILISATION_ON,
         .levelAngleLimit = 55,
@@ -1337,11 +1339,12 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
     float dynCi = dT;
     bool centeredSticks = false;
     for (int axis = FD_ROLL; axis <= FD_YAW; axis++) {
-        if (getRcDeflectionAbs(axis) < 0.05f) {
+        if (getRcDeflectionAbs(axis) < ITERM_WINDUP_DEADBAND) {
             centeredSticks = true;
+            break;
         }
     }
-    if (itermWindupPointInv > 1.0f && mixerGetThrottle() < 0.05f && centeredSticks) {
+    if (itermWindupPointInv > 1.0f && mixerGetThrottle() < ITERM_WINDUP_DEADBAND && centeredSticks) {
         dynCi *= constrainf((1.0f - getMotorMixRange()) * itermWindupPointInv, 0.0f, 1.0f);
     }
 

@@ -193,6 +193,19 @@ float applyKissRates(const int axis, float rcCommandf, const float rcCommandfAbs
     return kissAngle;
 }
 
+float applyNewRates(const int axis, float rcCommandf, const float rcCommandfAbs)
+{
+    const float sensitivity = currentControlRateProfile->rcRates[axis] / 100.0f * 200;
+    const float maxDPS = currentControlRateProfile->rates[axis] * 10.0f;
+    const float expof = 1 + 2 * currentControlRateProfile->rcExpo[axis] / 100.0f;
+    const float superFactorConfig = (maxDPS / sensitivity - 1) / (maxDPS / sensitivity);
+
+    float superfactor = 1.0f / (constrainf(1.0f - (powf(rcCommandfAbs, expof) * superFactorConfig), 0.01f, 1.00f));
+    float angleRate = constrainf(rcCommandf * sensitivity * superfactor, -SETPOINT_RATE_LIMIT, SETPOINT_RATE_LIMIT);
+
+    return angleRate;
+}
+
 float applyCurve(int axis, float deflection)
 {
     return applyRates(axis, deflection, fabsf(deflection));
@@ -815,6 +828,10 @@ void initRcProcessing(void)
         break;
     case RATES_TYPE_KISS:
         applyRates = applyKissRates;
+
+        break;
+    case RATES_TYPE_NEW:
+        applyRates = applyNewRates;
 
         break;
     }

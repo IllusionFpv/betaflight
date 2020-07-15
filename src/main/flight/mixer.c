@@ -506,6 +506,7 @@ FAST_CODE_NOINLINE void mixTable(timeUs_t currentTimeUs)
     }
 
     pidUpdateAntiGravityThrottleFilter(throttle);
+    pidUpdateThrottleLpfBoostFilter(throttle);
 
 #ifdef USE_DYN_LPF
     updateDynLpfCutoffs(currentTimeUs, throttle);

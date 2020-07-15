@@ -209,6 +209,9 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .dyn_lpf_curve_expo = 5,
         .level_race_mode = false,
         .vbat_sag_compensation = 0,
+        .thr_lpf_boost_sensitivity = 30,
+        .thr_lpf_boost_percent = 0,
+        .thr_lpf_boost_threshold = 40,
     );
 #ifndef USE_D_MIN
     pidProfile->pid[PID_ROLL].D = 30;
@@ -287,6 +290,13 @@ void pidUpdateAntiGravityThrottleFilter(float throttle)
         pidRuntime.antiGravityPBoost = pidRuntime.antiGravityPBoost * pidRuntime.antiGravityThrottleHpf;
         // smooth the P boost at 3hz to remove the jagged edges and prolong the effect after throttle stops
         pidRuntime.antiGravityPBoost = pt1FilterApply(&pidRuntime.antiGravitySmoothLpf, pidRuntime.antiGravityPBoost);
+    }
+}
+
+void pidUpdateThrottleLpfBoostFilter(float throttle)
+{
+    if (pidRuntime.throttleLpfBoostPercent > 0) {
+        pidRuntime.throttleLpfBoostHpf = throttle - pt1FilterApply(&pidRuntime.throttleLpfBoostLpf, throttle);
     }
 }
 
@@ -1222,6 +1232,9 @@ void dynLpfDTermUpdate(float throttle)
     if (pidRuntime.dynLpfFilter != DYN_LPF_NONE) {
         if (pidRuntime.dynLpfCurveExpo > 0) {
             cutoffFreq = dynLpfCutoffFreq(throttle, pidRuntime.dynLpfMin, pidRuntime.dynLpfMax, pidRuntime.dynLpfCurveExpo);
+            if (pidRuntime.throttleLpfBoostPercent > 0) {
+                cutoffFreq *= throttleLpfBoost(throttle);
+            }
         } else {
             cutoffFreq = fmax(dynThrottle(throttle) * pidRuntime.dynLpfMax, pidRuntime.dynLpfMin);
         }
@@ -1244,6 +1257,22 @@ float dynLpfCutoffFreq(float throttle, uint16_t dynLpfMin, uint16_t dynLpfMax, u
     static float curve;
     curve = throttle * (1 - throttle) * expof + throttle;
     return (dynLpfMax - dynLpfMin) * curve + dynLpfMin;
+}
+
+float throttleLpfBoost(float throttle) {
+    float boostFactor;
+
+    if (throttle < pidRuntime.throttleLpfBoostThreshold && pidRuntime.throttleLpfBoostHpf > 0) {
+        boostFactor = fminf(1.0f + 10.0f * pidRuntime.throttleLpfBoostHpf * pidRuntime.throttleLpfBoostSensitivity, pidRuntime.throttleLpfBoostPercent);
+    } else {
+        boostFactor = 1.0f;
+    }
+
+    DEBUG_SET(DEBUG_THR_LPF_BOOST, 0, lrintf(throttle * 1000));
+    DEBUG_SET(DEBUG_THR_LPF_BOOST, 1, lrintf(pidRuntime.throttleLpfBoostHpf * 1000));
+    DEBUG_SET(DEBUG_THR_LPF_BOOST, 2, lrintf(boostFactor * 1000));
+
+    return boostFactor;
 }
 
 void pidSetItermReset(bool enabled)

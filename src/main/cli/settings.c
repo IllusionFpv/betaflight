@@ -1085,6 +1085,10 @@ const clivalue_t valueTable[] = {
     { "acro_trainer_gain",          VAR_UINT8  | PROFILE_VALUE, .config.minmaxUnsigned = { 25, 255 }, PG_PID_PROFILE, offsetof(pidProfile_t, acro_trainer_gain) },
 #endif // USE_ACRO_TRAINER
 
+    { "thr_lpf_boost_percent",       VAR_UINT8 | PROFILE_VALUE, .config.minmaxUnsigned = { 0, 100 }, PG_PID_PROFILE, offsetof(pidProfile_t, thr_lpf_boost_percent) },
+    { "thr_lpf_boost_sensitivity",   VAR_UINT8 | PROFILE_VALUE, .config.minmaxUnsigned = { 10, 70 },PG_PID_PROFILE, offsetof(pidProfile_t, thr_lpf_boost_sensitivity) },
+    { "thr_lpf_boost_threshold",     VAR_UINT8 | PROFILE_VALUE, .config.minmaxUnsigned = { 10, 70 }, PG_PID_PROFILE, offsetof(pidProfile_t, thr_lpf_boost_threshold) },
+
     { "p_pitch",                    VAR_UINT8  | PROFILE_VALUE, .config.minmaxUnsigned = { 0, 200 }, PG_PID_PROFILE, offsetof(pidProfile_t, pid[PID_PITCH].P) },
     { "i_pitch",                    VAR_UINT8  | PROFILE_VALUE, .config.minmaxUnsigned = { 0, 200 }, PG_PID_PROFILE, offsetof(pidProfile_t, pid[PID_PITCH].I) },
     { "d_pitch",                    VAR_UINT8  | PROFILE_VALUE, .config.minmaxUnsigned = { 0, 200 }, PG_PID_PROFILE, offsetof(pidProfile_t, pid[PID_PITCH].D) },

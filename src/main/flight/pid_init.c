@@ -55,6 +55,7 @@
 
 #define ANTI_GRAVITY_THROTTLE_FILTER_CUTOFF 15  // The anti gravity throttle highpass filter cutoff
 #define ANTI_GRAVITY_SMOOTH_FILTER_CUTOFF 3  // The anti gravity P smoothing filter cutoff
+#define THROTTLE_LPF_BOOST_FILTER_CUTOFF 20 //The throttle based dterm boost highpass filter cutoff
 
 static void pidSetTargetLooptime(uint32_t pidLooptime)
 {
@@ -204,6 +205,7 @@ void pidInitFilters(const pidProfile_t *pidProfile)
 
     pt1FilterInit(&pidRuntime.antiGravityThrottleLpf, pt1FilterGain(ANTI_GRAVITY_THROTTLE_FILTER_CUTOFF, pidRuntime.dT));
     pt1FilterInit(&pidRuntime.antiGravitySmoothLpf, pt1FilterGain(ANTI_GRAVITY_SMOOTH_FILTER_CUTOFF, pidRuntime.dT));
+    pt1FilterInit(&pidRuntime.throttleLpfBoostLpf, pt1FilterGain(THROTTLE_LPF_BOOST_FILTER_CUTOFF, pidRuntime.dT));
 
     pidRuntime.ffBoostFactor = (float)pidProfile->ff_boost / 10.0f;
 }
@@ -401,6 +403,10 @@ void pidInitConfig(const pidProfile_t *pidProfile)
 #endif
 
     pidRuntime.levelRaceMode = pidProfile->level_race_mode;
+
+    pidRuntime.throttleLpfBoostPercent = 1.0f + pidProfile->thr_lpf_boost_percent / 100.0f;
+    pidRuntime.throttleLpfBoostThreshold = pidProfile->thr_lpf_boost_threshold / 100.0f;
+    pidRuntime.throttleLpfBoostSensitivity = 1.0f + pidProfile->thr_lpf_boost_sensitivity / 100.0f;
 }
 
 void pidCopyProfile(uint8_t dstPidProfileIndex, uint8_t srcPidProfileIndex)
@@ -410,4 +416,3 @@ void pidCopyProfile(uint8_t dstPidProfileIndex, uint8_t srcPidProfileIndex)
         memcpy(pidProfilesMutable(dstPidProfileIndex), pidProfilesMutable(srcPidProfileIndex), sizeof(pidProfile_t));
     }
 }
-

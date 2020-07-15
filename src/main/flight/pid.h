@@ -200,6 +200,10 @@ typedef struct pidProfile_s {
     uint8_t dyn_lpf_curve_expo;             // set the curve for dynamic dterm lowpass filter
     uint8_t level_race_mode;                // NFE race mode - when true pitch setpoint calcualtion is gyro based in level mode
     uint8_t vbat_sag_compensation;          // Reduce motor output by this percentage of the maximum compensation amount
+
+    uint8_t thr_lpf_boost_sensitivity;    // set the stick sensitivty of throttle lpf boost
+    uint8_t thr_lpf_boost_percent;        // set the max percent of the throttle lpf boost
+    uint8_t thr_lpf_boost_threshold;      // set the minimum throttle for enabling throttle lpf boost
 } pidProfile_t;
 
 PG_DECLARE_ARRAY(pidProfile_t, PID_PROFILE_COUNT, pidProfiles);
@@ -362,6 +366,13 @@ typedef struct pidRuntime_s {
     ffInterpolationType_t ffFromInterpolatedSetpoint;
     float ffSmoothFactor;
 #endif
+
+    pt1Filter_t throttleLpfBoostLpf;
+    float throttleLpfBoostHpf;
+    float throttleLpfBoostPercent;
+    float throttleLpfBoostThreshold;
+    float throttleLpfBoostSensitivity;
+
 } pidRuntime_t;
 
 extern pidRuntime_t pidRuntime;
@@ -382,6 +393,7 @@ bool crashRecoveryModeActive(void);
 void pidAcroTrainerInit(void);
 void pidSetAcroTrainerState(bool newState);
 void pidUpdateAntiGravityThrottleFilter(float throttle);
+void pidUpdateThrottleLpfBoostFilter(float throttle);
 bool pidOsdAntiGravityActive(void);
 bool pidOsdAntiGravityMode(void);
 void pidSetAntiGravityState(bool newState);
@@ -414,3 +426,4 @@ float pidGetPidFrequency();
 float pidGetFfBoostFactor();
 float pidGetFfSmoothFactor();
 float dynLpfCutoffFreq(float throttle, uint16_t dynLpfMin, uint16_t dynLpfMax, uint8_t expo);
+float throttleLpfBoost(float throttle);

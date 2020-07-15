@@ -629,6 +629,9 @@ void dynLpfGyroUpdate(float throttle)
         unsigned int cutoffFreq;
         if (gyro.dynLpfCurveExpo > 0) {
             cutoffFreq = dynLpfCutoffFreq(throttle, gyro.dynLpfMin, gyro.dynLpfMax, gyro.dynLpfCurveExpo);
+            if (pidRuntime.throttleLpfBoostPercent > 0) {
+                cutoffFreq *= throttleLpfBoost(throttle);
+            }
         } else {
             cutoffFreq = fmax(dynThrottle(throttle) * gyro.dynLpfMax, gyro.dynLpfMin);
         }

@@ -113,6 +113,7 @@ typedef enum {
     DEBUG_GYRO_SAMPLE,
     DEBUG_RX_TIMING,
     DEBUG_D_LPF,
+    DEBUG_THR_DTERM_BOOST,
     DEBUG_COUNT
 } debugType_e;
 

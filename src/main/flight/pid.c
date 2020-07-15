@@ -210,6 +210,9 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .dyn_lpf_curve_expo = 5,
         .level_race_mode = false,
         .vbat_sag_compensation = 0,
+        .thr_dterm_boost_sensitivity = 30,
+        .thr_dterm_boost_percent = 0,
+        .thr_dterm_boost_threshold = 20,
     );
 #ifndef USE_D_MIN
     pidProfile->pid[PID_ROLL].D = 30;
@@ -278,6 +281,13 @@ void pidUpdateAntiGravityThrottleFilter(float throttle)
 {
     if (pidRuntime.antiGravityMode == ANTI_GRAVITY_SMOOTH) {
         pidRuntime.antiGravityThrottleHpf = throttle - pt1FilterApply(&pidRuntime.antiGravityThrottleLpf, throttle);
+    }
+}
+
+void pidUpdateThrottleDtermBoostFilter(float throttle)
+{
+    if (pidRuntime.throttleDtermBoostPercent > 0) {
+        pidRuntime.throttleDtermBoostHpf = throttle - pt1FilterApply(&pidRuntime.throttleDtermBoostLpf, throttle);
     }
 }
 
@@ -1047,6 +1057,30 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
             // Apply the dMinFactor
             preTpaData *= dMinFactor;
 #endif
+
+            float thrDtermBoostFactor = 1.0f;
+            if (pidRuntime.throttleDtermBoostPercent > 0) {
+                float throttle = mixerGetThrottle();
+
+                if (throttle < pidRuntime.throttleDtermBoostThreshold && pidRuntime.throttleDtermBoostHpf > pidRuntime.throttleDtermBoostSensitivity) {
+                    pidRuntime.isThrDtermBoostEnabled = true;
+                } else if (pidRuntime.throttleDtermBoostHpf < pidRuntime.throttleDtermBoostSensitivity / 100.0f) {
+                    pidRuntime.isThrDtermBoostEnabled = false;
+                }
+
+                if (pidRuntime.isThrDtermBoostEnabled) {
+                    thrDtermBoostFactor = thrDtermBoostFactor + pidRuntime.throttleDtermBoostPercent;
+                }
+
+                DEBUG_SET(DEBUG_THR_DTERM_BOOST, 0, lrintf(throttle * 1000));
+                DEBUG_SET(DEBUG_THR_DTERM_BOOST, 1, lrintf(pidRuntime.throttleDtermBoostHpf * 1000));
+                DEBUG_SET(DEBUG_THR_DTERM_BOOST, 2, lrintf(thrDtermBoostFactor * 1000));
+                DEBUG_SET(DEBUG_THR_DTERM_BOOST, 3, pidRuntime.isThrDtermBoostEnabled * 1000);
+            }
+
+            // Apply the thrDtermBoostFactor
+            preTpaData *= thrDtermBoostFactor;
+
             pidData[axis].D = preTpaData * tpaFactor;
 
             // Log the value of D pre application of TPA

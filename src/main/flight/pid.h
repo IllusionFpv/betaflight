@@ -201,6 +201,10 @@ typedef struct pidProfile_s {
     uint8_t dyn_lpf_curve_expo;             // set the curve for dynamic dterm lowpass filter
     uint8_t level_race_mode;                // NFE race mode - when true pitch setpoint calcualtion is gyro based in level mode
     uint8_t vbat_sag_compensation;          // Reduce motor output by this percentage of the maximum compensation amount
+
+    uint8_t thr_dterm_boost_sensitivity;    // set the stick sensitivty of throttle dterm boost
+    uint8_t thr_dterm_boost_percent;        // set the percent of dterm throttle boost
+    uint8_t thr_dterm_boost_threshold;      // set the minimum throttle for enabling throttle dterm boost
 } pidProfile_t;
 
 PG_DECLARE_ARRAY(pidProfile_t, PID_PROFILE_COUNT, pidProfiles);
@@ -362,6 +366,13 @@ typedef struct pidRuntime_s {
     ffInterpolationType_t ffFromInterpolatedSetpoint;
     float ffSmoothFactor;
 #endif
+
+    pt1Filter_t throttleDtermBoostLpf;
+    float throttleDtermBoostHpf;
+    float throttleDtermBoostPercent;
+    float throttleDtermBoostThreshold;
+    float throttleDtermBoostSensitivity;
+    bool isThrDtermBoostEnabled;
 } pidRuntime_t;
 
 extern pidRuntime_t pidRuntime;
@@ -382,6 +393,7 @@ bool crashRecoveryModeActive(void);
 void pidAcroTrainerInit(void);
 void pidSetAcroTrainerState(bool newState);
 void pidUpdateAntiGravityThrottleFilter(float throttle);
+void pidUpdateThrottleDtermBoostFilter(float throttle);
 bool pidOsdAntiGravityActive(void);
 bool pidOsdAntiGravityMode(void);
 void pidSetAntiGravityState(bool newState);

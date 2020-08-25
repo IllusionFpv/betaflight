@@ -1232,13 +1232,12 @@ void dynLpfDTermUpdate(float throttle)
     if (pidRuntime.dynLpfFilter != DYN_LPF_NONE) {
         if (pidRuntime.dynLpfCurveExpo > 0) {
             cutoffFreq = dynLpfCutoffFreq(throttle, pidRuntime.dynLpfMin, pidRuntime.dynLpfMax, pidRuntime.dynLpfCurveExpo);
-            if (pidRuntime.throttleLpfBoostPercent > 0) {
-                cutoffFreq *= throttleLpfBoost(throttle);
-            }
         } else {
             cutoffFreq = fmax(dynThrottle(throttle) * pidRuntime.dynLpfMax, pidRuntime.dynLpfMin);
         }
-
+        if (pidRuntime.throttleLpfBoostPercent > 0) {
+            cutoffFreq = MIN(cutoffFreq * throttleLpfBoost(throttle), pidRuntime.dynLpfMax);
+        }
          if (pidRuntime.dynLpfFilter == DYN_LPF_PT1) {
             for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
                 pt1FilterUpdateCutoff(&pidRuntime.dtermLowpass[axis].pt1Filter, pt1FilterGain(cutoffFreq, pidRuntime.dT));
@@ -1263,7 +1262,7 @@ float throttleLpfBoost(float throttle) {
     float boostFactor;
 
     if (throttle < pidRuntime.throttleLpfBoostThreshold && pidRuntime.throttleLpfBoostHpf > 0) {
-        boostFactor = fminf(1.0f + 10.0f * pidRuntime.throttleLpfBoostHpf * pidRuntime.throttleLpfBoostSensitivity, pidRuntime.throttleLpfBoostPercent);
+        boostFactor = MIN(1.0f + 10.0f * pidRuntime.throttleLpfBoostHpf * pidRuntime.throttleLpfBoostSensitivity, pidRuntime.throttleLpfBoostPercent);
     } else {
         boostFactor = 1.0f;
     }

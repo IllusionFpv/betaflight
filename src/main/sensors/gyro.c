@@ -629,11 +629,11 @@ void dynLpfGyroUpdate(float throttle)
         unsigned int cutoffFreq;
         if (gyro.dynLpfCurveExpo > 0) {
             cutoffFreq = dynLpfCutoffFreq(throttle, gyro.dynLpfMin, gyro.dynLpfMax, gyro.dynLpfCurveExpo);
-            if (pidRuntime.throttleLpfBoostPercent > 0) {
-                cutoffFreq *= throttleLpfBoost(throttle);
-            }
         } else {
             cutoffFreq = fmax(dynThrottle(throttle) * gyro.dynLpfMax, gyro.dynLpfMin);
+        }
+        if (pidRuntime.throttleLpfBoostPercent > 0) {
+            cutoffFreq = MIN(cutoffFreq * throttleLpfBoost(throttle), gyro.dynLpfMax);
         }
         if (gyro.dynLpfFilter == DYN_LPF_PT1) {
             DEBUG_SET(DEBUG_DYN_LPF, 2, cutoffFreq);

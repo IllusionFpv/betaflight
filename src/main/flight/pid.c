@@ -296,7 +296,8 @@ void pidUpdateAntiGravityThrottleFilter(float throttle)
 void pidUpdateThrottleLpfBoostFilter(float throttle)
 {
     if (pidRuntime.throttleLpfBoostPercent > 0) {
-        pidRuntime.throttleLpfBoostHpf = throttle - pt1FilterApply(&pidRuntime.throttleLpfBoostLpf, throttle);
+        const float throttleHpf = throttle - pt1FilterApply(&pidRuntime.throttleLpfBoostLpf, throttle);
+        pidRuntime.throttleLpfBoostHpf = pt1FilterApply(&pidRuntime.filteredThrottleLpfBoostHpf, throttleHpf);
     }
 }
 

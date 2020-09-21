@@ -368,6 +368,7 @@ typedef struct pidRuntime_s {
 #endif
 
     pt1Filter_t throttleLpfBoostLpf;
+    pt1Filter_t filteredThrottleLpfBoostHpf;
     float throttleLpfBoostHpf;
     float throttleLpfBoostPercent;
     float throttleLpfBoostThreshold;

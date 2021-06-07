@@ -49,13 +49,13 @@ static void calculateNewPidValues(pidProfile_t *pidProfile)
         const float rpRatio = (axis == FD_PITCH) ? pidProfile->simplified_roll_pitch_ratio / 100.0f : 1.0f;
         const float dminRatio = 1.0f + (((float)pidDefaults[axis].D / dMinDefaults[axis] - 1.0f) * (pidProfile->simplified_dmin_ratio / 100.0f - 1.0f));
 
-        pidProfile->pid[axis].P = constrain(pidDefaults[axis].P * masterMultiplier * pdGain * pdRatio * rpRatio, 0, PID_GAIN_MAX);
+        pidProfile->pid[axis].P = constrain(pidDefaults[axis].P * masterMultiplier * pdGain * rpRatio, 0, PID_GAIN_MAX);
         pidProfile->pid[axis].I = constrain(pidDefaults[axis].I * masterMultiplier * iGain * rpRatio, 0, PID_GAIN_MAX);
-        pidProfile->pid[axis].D = constrain(pidDefaults[axis].D * masterMultiplier * pdGain * rpRatio, 0, PID_GAIN_MAX);
+        pidProfile->pid[axis].D = constrain(pidDefaults[axis].D * masterMultiplier * pdGain * pdRatio * rpRatio, 0, PID_GAIN_MAX);
         if (pidProfile->simplified_dmin_ratio == SIMPLIFIED_TUNING_MAX) {
             pidProfile->d_min[axis] = 0;
         } else {
-            pidProfile->d_min[axis] = constrain(dMinDefaults[axis] * masterMultiplier * pdGain * rpRatio * dminRatio, 0, D_MIN_GAIN_MAX);
+            pidProfile->d_min[axis] = constrain(dMinDefaults[axis] * masterMultiplier * pdGain * pdRatio * rpRatio * dminRatio, 0, D_MIN_GAIN_MAX);
         }
         pidProfile->pid[axis].F = constrain(pidDefaults[axis].F * masterMultiplier * feedforwardGain * rpRatio, 0, F_GAIN_MAX);
     }

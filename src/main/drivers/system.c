@@ -35,7 +35,7 @@
 
 #include "system.h"
 
-#if defined(STM32F3) || defined(STM32F4) || defined(STM32F7) || defined(STM32H7)
+#if defined(STM32F4) || defined(STM32F7) || defined(STM32H7) || defined(AT32F4)
 // See "RM CoreSight Architecture Specification"
 // B2.3.10  "LSR and LAR, Software Lock Status Register and Software Lock Access Register"
 // "E1.2.11  LAR, Lock Access Register"
@@ -57,6 +57,10 @@ void cycleCounterInit(void)
 {
 #if defined(USE_HAL_DRIVER)
     cpuClockFrequency = HAL_RCC_GetSysClockFreq();
+#elif defined(USE_ATBSP_DRIVER)
+    crm_clocks_freq_type clocks;
+    crm_clocks_freq_get(&clocks);
+    cpuClockFrequency = clocks.sclk_freq;
 #else
     RCC_ClocksTypeDef clocks;
     RCC_GetClocksFreq(&clocks);
@@ -67,11 +71,11 @@ void cycleCounterInit(void)
     CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
 
 #if defined(DWT_LAR_UNLOCK_VALUE)
-#if defined(STM32H7)
+#if defined(STM32H7) || defined(AT32F4)
     ITM->LAR = DWT_LAR_UNLOCK_VALUE;
 #elif defined(STM32F7)
     DWT->LAR = DWT_LAR_UNLOCK_VALUE;
-#elif defined(STM32F3) || defined(STM32F4)
+#elif defined(STM32F4)
     // Note: DWT_Type does not contain LAR member.
 #define DWT_LAR
     __O uint32_t *DWTLAR = (uint32_t *)(DWT_BASE + 0x0FB0);
@@ -103,7 +107,7 @@ void SysTick_Handler(void)
 
 // Return system uptime in microseconds (rollover in 70minutes)
 
-uint32_t microsISR(void)
+MMFLASH_CODE_NOINLINE uint32_t microsISR(void)
 {
     register uint32_t ms, pending, cycle_cnt;
 
@@ -153,7 +157,7 @@ uint32_t getCycleCounter(void)
     return DWT->CYCCNT;
 }
 
-uint32_t clockCyclesToMicros(uint32_t clockCycles)
+int32_t clockCyclesToMicros(int32_t clockCycles)
 {
     return clockCycles / usTicks;
 }
@@ -262,7 +266,7 @@ void failureMode(failureMode_e mode)
 void initialiseMemorySections(void)
 {
 #ifdef USE_ITCM_RAM
-    /* Load functions into ITCM RAM */
+    /* Load fast-functions into ITCM RAM */
     extern uint8_t tcm_code_start;
     extern uint8_t tcm_code_end;
     extern uint8_t tcm_code;
@@ -284,6 +288,15 @@ void initialiseMemorySections(void)
     extern uint8_t _sfastram_idata;
     memcpy(&_sfastram_data, &_sfastram_idata, (size_t) (&_efastram_data - &_sfastram_data));
 #endif
+
+#ifdef USE_RAM_CODE
+    /* Load slow-functions into ITCM RAM */
+    extern uint8_t ram_code_start;
+    extern uint8_t ram_code_end;
+    extern uint8_t ram_code;
+    memcpy(&ram_code_start, &ram_code, (size_t) (&ram_code_end - &ram_code_start));
+#endif
+
 }
 
 #ifdef STM32H7
